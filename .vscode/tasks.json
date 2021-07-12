@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "gradle",
+			"id": "d:\\Source\\GitHub\\gameofur-apibuildgameofur-api",
+			"script": "build",
+			"description": "Assembles and tests this project.",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"project": "gameofur-api",
+			"buildFile": "D:\\Source\\GitHub\\gameofur-api\\build.gradle",
+			"rootProject": "gameofur-api",
+			"projectFolder": "d:\\Source\\GitHub\\gameofur-api",
+			"workspaceFolder": "d:\\Source\\GitHub\\gameofur-api",
+			"args": "",
+			"javaDebug": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"label": "gradle: build"
+		}
+	]
+}

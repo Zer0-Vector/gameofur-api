@@ -1,0 +1,68 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+plugins {
+  id 'com.github.johnrengelman.shadow' version '7.0.0'
+  id 'java'
+  id 'application'
+}
+
+group = 'com.github.zer0_vector'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+  mavenCentral()
+}
+
+def vertxVersion = '4.1.1'
+def junitJupiterVersion = '5.7.0'
+
+def mainVerticleName = 'com.github.zer0_vector.gameofur_api.MainVerticle'
+def launcherClassName = 'io.vertx.core.Launcher'
+
+def watchForChange = 'src/**/*'
+def doOnChange = "${projectDir}/gradlew classes"
+
+application {
+  mainClass=launcherClassName
+}
+
+dependencies {
+  implementation(platform("io.vertx:vertx-stack-depchain:${vertxVersion}"))
+  implementation('io.vertx:vertx-auth-jwt')
+  implementation('io.vertx:vertx-health-check')
+  implementation('io.vertx:vertx-web')
+  implementation('io.vertx:vertx-web-openapi')
+  implementation('io.vertx:vertx-opentelemetry')
+  implementation('io.vertx:vertx-circuit-breaker')
+  implementation('io.vertx:vertx-micrometer-metrics')
+  implementation('io.vertx:vertx-shell')
+  implementation('io.vertx:vertx-web-api-contract')
+
+  testImplementation('io.vertx:vertx-junit5')
+  testImplementation("org.junit.jupiter:junit-jupiter:${junitJupiterVersion}")
+}
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
+}
+
+tasks.withType(ShadowJar) {
+  archiveClassifier='fat'
+  manifest {
+    attributes('Main-Verticle': mainVerticleName)
+  }
+  mergeServiceFiles()
+}
+
+tasks.withType(Test) {
+  useJUnitPlatform()
+  testLogging {
+    events = [TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED]
+  }
+}
+
+tasks.withType(JavaExec) {
+  args = ['run', mainVerticleName, "--redeploy=${watchForChange}", "--launcher-class=${launcherClassName}", "--on-redeploy=${doOnChange}"]
+}
