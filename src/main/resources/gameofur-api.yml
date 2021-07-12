@@ -1,0 +1,202 @@
+openapi: '3.0.2'
+info:
+  title: Game of Ur API
+  description: Apis for gameofur
+  version: '1.0.0'
+servers:
+  - url: https://localhost:8080/gameofur/v1
+    description: local test server
+paths:
+  /games:
+    summary: Collection of games
+    get:
+      operationId: getGames
+      description: Returns both active and joinable games
+      parameters:
+        - in: query
+          name: only
+          description: Filter by joinable games
+          schema:
+            type: string
+            enum: [all, joinable, active]
+            default: all
+      tags:
+        - 'games'
+        - 'read'
+      responses:
+        '200':
+          description: Returns currently active games.
+    post:
+      operationId: newGame
+      tags:
+        - 'games'
+        - 'create'
+      responses:
+        '200':
+          description: Game created successfully
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+  /games/{id}:
+    description: Game state/status
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      operationId: getGame
+      tags:
+        - 'game'
+        - 'read'
+      responses:
+        '200':
+          description: Current game state/status
+        '304':
+          description: Server's game state is same as client's
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '409':
+          $ref: '#/components/responses/UnexpectedGameState'
+        '410':
+          $ref: '#/components/responses/GameOver'
+        '404':
+          $ref: '#/components/responses/UnknownGame'
+  /games/{id}/join:
+    description: Join game as player
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    post:
+      operationId: joinGame
+      tags:
+        - 'game'
+        - 'update'
+      responses:
+        '202':
+          description: Game joined successfully as player
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '410':
+          $ref: '#/components/responses/GameOver'
+        '404':
+          $ref: '#/components/responses/UnknownGame'
+  /games/{id}/spectate:
+    description: Join game as spectator
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    post:
+      operationId: spectateGame
+      tags:
+        - 'game'
+        - 'update'
+      responses:
+        '202':
+          description: Game joined successfully as spectator
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '410':
+          $ref: '#/components/responses/GameOver'
+        '404':
+          $ref: '#/components/responses/UnknownGame'
+  /games/{id}/action:
+    description: Perform game action
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    post:
+      operationId: gameAction
+      tags:
+        - 'game'
+        - 'update'
+      responses:
+        '202':
+          description: Action completed successfully
+        '400':
+          $ref: '#/components/responses/MalformedRequest'
+        '409':
+          $ref: '#/components/responses/UnexpectedGameState'
+        '410':
+          $ref: '#/components/responses/GameOver'
+        '404':
+          $ref: '#/components/responses/UnknownGame'
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    GameId:
+      in: path
+      name: id
+      required: true
+      allowEmptyValue: false
+      schema:
+        type: string
+        pattern: '[A-Za-z0-9]{4,}'
+  responses:
+    UnknownGame:
+      description: Unknown game
+      content:
+        applciation/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+    MalformedRequest:
+      description: Request syntax malformed
+      content:
+        applciation/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+    UnexpectedGameState:
+      description: Expected game state didn't match, e.g. it's not your turn
+      content:
+        applciation/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+    GameOver:
+      # TODO link to history
+      description: The game has ended. Link to history.
+      content:
+        applciation/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+    Unauthorized:
+      description: Client is unauthenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+    Forbidden:
+      description: User does not have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ClientError'
+  schemas:
+    ClientError:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - unknown_game
+            - game_over
+            - request_syntax
+            - unexpected_game_state
+        message:
+          type: string
+          description: Error message/description.
+      required:
+        - 'type'
+        - 'message'
+    ServerError:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - unknown_error # catch-all
+            - could_not_update # e.g. database connection issue
+        message:
+          type: string
+          description: Error message/description
+      required:
+        - 'type'
+        - 'message'
